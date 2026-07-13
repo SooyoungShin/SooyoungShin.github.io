@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>달러표현계산기 · Dollar Expression Calculator</title>
+<meta name="theme-color" content="#F7F8F4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="달러계산기">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --paper:#F7F8F4;
+    --ink:#131B16;
+    --muted:#5C665F;
+    --line:#DCE0D7;
+    --usd:#2F6B4F;   /* US banknote green */
+    --usd-soft:#E7F0EA;
+    --krw:#B07A22;   /* 오만원권 gold */
+    --krw-soft:#F6EEDD;
+    --card:#FFFFFF;
+  }
+  :root{
+    --sans:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Segoe UI',Roboto,sans-serif;
+    --monofont:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Roboto Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-text-size-adjust:100%;
+  }
+  .mono{font-family:var(--monofont)}
+
+  .wrap{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+
+  header{margin-bottom:36px}
+  .eyebrow{
+    font-family:var(--monofont);
+    font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:10px;
+  }
+  h1{font-size:2rem;font-weight:700;letter-spacing:-.01em}
+  h1 .sub{display:block;font-size:.95rem;font-weight:400;color:var(--muted);margin-top:4px}
+
+  /* rate bar */
+  .rate{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+    border:1px solid var(--line);background:var(--card);
+    border-radius:10px;padding:14px 18px;margin-bottom:28px;
+  }
+  .rate label{font-size:.85rem;color:var(--muted)}
+  .rate input{
+    font-family:var(--monofont);font-size:1rem;font-weight:600;
+    width:110px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;
+    background:var(--paper);color:var(--ink);text-align:right;
+  }
+  .rate .eq{font-family:var(--monofont);font-size:.9rem;color:var(--muted)}
+  .rate button{
+    font-family:var(--monofont);font-size:.8rem;
+    min-height:38px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;
+    background:var(--paper);color:var(--muted);cursor:pointer;
+    touch-action:manipulation;
+  }
+  .rate button:hover{border-color:var(--ink);color:var(--ink)}
+  @media(max-width:480px){
+    .wrap{padding:24px 14px 60px}
+    h1{font-size:1.55rem}
+    .card{padding:18px 16px 22px}
+    .big{font-size:1.6rem}
+    .rate{padding:12px 14px}
+    .rate input{width:96px;font-size:16px}
+    .card input[type=text]{font-size:16px}
+  }
+
+  /* converter cards */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 26px;display:flex;flex-direction:column;gap:16px;
+  }
+  .card.usd{border-top:4px solid var(--usd)}
+  .card.krw{border-top:4px solid var(--krw)}
+
+  .card h2{font-size:1rem;font-weight:700;display:flex;align-items:baseline;gap:8px}
+  .card h2 .dir{font-family:var(--monofont);font-size:.72rem;font-weight:400;
+    letter-spacing:.1em;color:var(--muted)}
+  .card.usd h2 .badge{color:var(--usd)}
+  .card.krw h2 .badge{color:var(--krw)}
+
+  .card input[type=text]{
+    width:100%;font-family:var(--monofont);font-size:1.25rem;font-weight:600;
+    padding:12px 14px;border:1px solid var(--line);border-radius:8px;
+    background:var(--paper);color:var(--ink);
+  }
+  .card.usd input:focus{outline:2px solid var(--usd);outline-offset:1px}
+  .card.krw input:focus{outline:2px solid var(--krw);outline-offset:1px}
+  .rate input:focus{outline:2px solid var(--ink);outline-offset:1px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips button{
+    font-family:var(--monofont);font-size:.85rem;
+    min-height:38px;padding:6px 14px;border:1px solid var(--line);border-radius:999px;
+    background:transparent;color:var(--muted);cursor:pointer;
+    touch-action:manipulation;
+  }
+  .card.usd .chips button:hover{border-color:var(--usd);color:var(--usd)}
+  .card.krw .chips button:hover{border-color:var(--krw);color:var(--krw)}
+
+  .result{border-top:1px dashed var(--line);padding-top:16px;min-height:150px}
+  .big{
+    font-size:1.9rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;
+    overflow-wrap:anywhere;
+  }
+  .card.usd .big{color:var(--usd)}
+  .card.krw .big{color:var(--krw)}
+  .row{margin-top:10px;font-size:.92rem;color:var(--ink)}
+  .row .lbl{
+    display:inline-block;font-family:var(--monofont);font-size:.68rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    width:86px;
+  }
+  .err{color:#A33B2E;font-size:.9rem}
+  .hint{color:var(--muted);font-size:.85rem}
+
+  /* signature: digit bridge — same number grouped both ways */
+  .bridge{
+    margin-top:14px;background:var(--paper);border:1px solid var(--line);
+    border-radius:8px;padding:12px 14px;overflow-x:auto;
+  }
+  .bridge .btitle{
+    font-family:var(--monofont);font-size:.65rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+  }
+  .bline{display:flex;align-items:flex-end;gap:2px;white-space:nowrap}
+  .bgroup{display:flex;flex-direction:column;align-items:center}
+  .bdigits{font-family:var(--monofont);font-size:1.05rem;font-weight:600}
+  .bunit{font-size:.68rem;color:var(--muted);margin-top:2px;min-height:1em}
+  .bsep{color:var(--line);font-size:1.05rem;padding:0 2px;align-self:flex-start}
+  .bnote{margin-top:6px;font-size:.75rem;color:var(--muted)}
+
+  footer{margin-top:44px;font-size:.8rem;color:var(--muted)}
+  footer .mono{font-size:.75rem}
+
+  @media (prefers-reduced-motion: no-preference){
+    .big{transition:opacity .15s ease}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">$1M = 100만 달러 · 1억 = 100M won</div>
+    <h1>달러표현계산기
+      <span class="sub">English money expressions ↔ Korean money expressions</span>
+    </h1>
+  </header>
+
+  <div class="rate">
+    <label for="rateInput">환율 Exchange rate</label>
+    <span class="eq">1 USD =</span>
+    <input id="rateInput" type="number" value="1000" min="1" step="any" inputmode="decimal">
+    <span class="eq">KRW</span>
+    <button type="button" data-rate="1000">1,000 (간편계산)</button>
+    <button type="button" data-rate="1350">1,350</button>
+    <button type="button" data-rate="1400">1,400</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- USD → KRW -->
+    <section class="card usd">
+      <h2><span class="badge">USD → KRW</span><span class="dir">달러 → 한국어 표현</span></h2>
+      <input id="usdInput" type="text" placeholder="$1M, 250k, 3.5B, 1,000,000 …"
+             autocomplete="off" spellcheck="false" aria-label="US dollar amount">
+      <div class="chips" id="usdChips">
+        <button type="button">$100K</button>
+        <button type="button">$1M</button>
+        <button type="button">$7.5M</button>
+        <button type="button">$1B</button>
+      </div>
+      <div class="result" id="usdResult">
+        <p class="hint">금액을 입력하면 한국어 표현으로 변환됩니다.</p>
+      </div>
+    </section>
+
+    <!-- KRW → USD -->
+    <section class="card krw">
+      <h2><span class="badge">KRW → USD</span><span class="dir">원화 → 영어 표현</span></h2>
+      <input id="krwInput" type="text" placeholder="1억, 5000만, 3조 2000억, 1,000,000원 …"
+             autocomplete="off" spellcheck="false" aria-label="Korean won amount">
+      <div class="chips" id="krwChips">
+        <button type="button">1억</button>
+        <button type="button">100억</button>
+        <button type="button">1조</button>
+        <button type="button">100조</button>
+      </div>
+      <div class="result" id="krwResult">
+        <p class="hint">Enter a Korean amount to see how it's said in English.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>한국어는 만(10⁴) 단위로, 영어는 thousand(10³) 단위로 자릿수를 끊습니다 — 이 계산기는 그 간극을 이어줍니다.</p>
+    <p class="mono">Korean groups digits by 10,000 (만·억·조); English groups by 1,000 (K·M·B).</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const rateInput = document.getElementById('rateInput');
+  const usdInput  = document.getElementById('usdInput');
+  const krwInput  = document.getElementById('krwInput');
+  const usdResult = document.getElementById('usdResult');
+  const krwResult = document.getElementById('krwResult');
+
+  const fmt = n => n.toLocaleString('en-US', {maximumFractionDigits: 2});
+
+  function trimNum(n){
+    const r = Math.round(n * 100) / 100;
+    return r.toLocaleString('en-US', {maximumFractionDigits: 2});
+  }
+
+  /* ---------- parsing ---------- */
+
+  // "$1M", "1.5m", "250k", "3B", "1,000,000"
+  function parseUsd(str){
+    let s = str.trim().replace(/[$,\s]/g, '').replace(/dollars?$/i, '');
+    if (!s) return null;
+    const m = s.match(/^(\d+(?:\.\d+)?)([kKmMbBtT]?)$/);
+    if (!m) return null;
+    const mult = {k:1e3, m:1e6, b:1e9, t:1e12, '':1}[m[2].toLowerCase()];
+    const v = parseFloat(m[1]) * mult;
+    return isFinite(v) ? v : null;
+  }
+
+  // "1억", "5000만", "3조 2000억", "1억2000만", "1.5억", "1,000,000원", "1000000"
+  function parseKrw(str){
+    let s = str.trim().replace(/[₩,\s]/g, '').replace(/원$/, '');
+    if (!s) return null;
+    if (/^\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+    const units = {'경':1e16, '조':1e12, '억':1e8, '만':1e4, '천':1e3};
+    let total = 0, matched = false;
+    const re = /(\d+(?:\.\d+)?)(경|조|억|만|천)/g;
+    let lastIndex = 0, m;
+    while ((m = re.exec(s)) !== null){
+      if (m.index !== lastIndex) return null;       // stray text between tokens
+      total += parseFloat(m[1]) * units[m[2]];
+      lastIndex = re.lastIndex;
+      matched = true;
+    }
+    if (!matched) return null;
+    const rest = s.slice(lastIndex);
+    if (rest){
+      if (!/^\d+$/.test(rest)) return null;         // e.g. "1억2000" → +2000
+      total += parseFloat(rest);
+    }
+    return isFinite(total) ? total : null;
+  }
+
+  /* ---------- formatting ---------- */
+
+  // 1000000000 → "10억"
+  function koreanUnits(n){
+    n = Math.round(n);
+    if (n === 0) return '0';
+    const units = [['경',1e16],['조',1e12],['억',1e8],['만',1e4]];
+    let parts = [], rest = n;
+    for (const [name, val] of units){
+      const q = Math.floor(rest / val);
+      if (q > 0){ parts.push(q.toLocaleString('en-US') + name); rest -= q * val; }
+    }
+    if (rest > 0) parts.push(rest.toLocaleString('en-US'));
+    return parts.join(' ');
+  }
+
+  // 100000 → {short:"$100K", word:"100 thousand dollars"}
+  function usdExpressions(n){
+    const tiers = [
+      [1e12, 'T', 'trillion'],
+      [1e9,  'B', 'billion'],
+      [1e6,  'M', 'million'],
+      [1e3,  'K', 'thousand']
+    ];
+    for (const [val, sym, word] of tiers){
+      if (n >= val){
+        const q = trimNum(n / val);
+        return { short: '$' + q + sym, word: q + ' ' + word + ' dollars' };
+      }
+    }
+    return { short: '$' + trimNum(n), word: trimNum(n) + ' dollars' };
+  }
+
+  function figures(n){
+    const i = Math.floor(Math.abs(n));
+    if (i < 1) return null;
+    const d = String(i).length;
+    return d >= 4 ? d + ' figures' : null;   // people rarely say "3 figures"
+  }
+
+  /* ---------- signature: digit bridge ---------- */
+
+  function bridgeHtml(wonInt){
+    const s = String(Math.round(wonInt));
+    if (s.length < 5) return '';
+    // group digits in 4s from the right, label boundaries with 만/억/조/경
+    const unitNames = ['', '만', '억', '조', '경'];
+    const groups = [];
+    for (let end = s.length, gi = 0; end > 0; end -= 4, gi++){
+      groups.unshift({ digits: s.slice(Math.max(0, end - 4), end), unit: unitNames[gi] || '' });
+    }
+    let html = '<div class="bridge"><div class="btitle">자릿수 브리지 · digit bridge (₩)</div><div class="bline">';
+    groups.forEach((g, i) => {
+      html += '<div class="bgroup"><span class="bdigits">' + g.digits + '</span>'
+            + '<span class="bunit">' + g.unit + '</span></div>';
+      if (i < groups.length - 1) html += '<span class="bsep">·</span>';
+    });
+    html += '</div><div class="bnote">한국어는 4자리(만 단위), 영어는 3자리(천 단위)로 끊어 읽습니다.</div></div>';
+    return html;
+  }
+
+  /* ---------- rendering ---------- */
+
+  function rate(){
+    const r = parseFloat(rateInput.value);
+    return (isFinite(r) && r > 0) ? r : null;
+  }
+
+  function renderUsd(){
+    const raw = usdInput.value;
+    if (!raw.trim()){ usdResult.innerHTML = '<p class="hint">금액을 입력하면 한국어 표현으로 변환됩니다.</p>'; return; }
+    const r = rate();
+    if (!r){ usdResult.innerHTML = '<p class="err">환율을 확인해 주세요.</p>'; return; }
+    const usd = parseUsd(raw);
+    if (usd === null){
+      usdResult.innerHTML = '<p class="err">형식을 인식하지 못했습니다. 예: $1M, 250k, 1,000,000</p>';
+      return;
+    }
+    const won = usd * r;
+    const expr = usdExpressions(usd);
+    const fig = figures(usd);
+    usdResult.innerHTML =
+      '<div class="big">' + koreanUnits(won) + ' 원</div>' +
+      '<div class="row"><span class="lbl">Won</span><span class="mono">₩' + fmt(Math.round(won)) + '</span></div>' +
+      '<div class="row"><span class="lbl">You said</span><span class="mono">$' + fmt(usd) + '</span> · ' + expr.word + (fig ? ' · ' + fig : '') + '</div>' +
+      bridgeHtml(won);
+  }
+
+  function renderKrw(){
+    const raw = krwInput.value;
+    if (!raw.trim()){ krwResult.innerHTML = '<p class="hint">Enter a Korean amount to see how it\'s said in English.</p>'; return; }
+    const r = rate();
+    if (!r){ krwResult.innerHTML = '<p class="err">환율을 확인해 주세요.</p>'; return; }
+    const won = parseKrw(raw);
+    if (won === null){
+      krwResult.innerHTML = '<p class="err">형식을 인식하지 못했습니다. 예: 1억, 5000만, 1,000,000원</p>';
+      return;
+    }
+    const usd = won / r;
+    const expr = usdExpressions(usd);
+    const fig = figures(usd);
+    krwResult.innerHTML =
+      '<div class="big">' + expr.short + '</div>' +
+      '<div class="row"><span class="lbl">Exact</span><span class="mono">$' + fmt(usd) + '</span></div>' +
+      '<div class="row"><span class="lbl">Said as</span>' + expr.word + (fig ? ' · <strong>' + fig + '</strong>' : '') + '</div>' +
+      '<div class="row"><span class="lbl">You said</span><span class="mono">₩' + fmt(Math.round(won)) + '</span> · ' + koreanUnits(won) + ' 원</div>';
+  }
+
+  function renderAll(){ renderUsd(); renderKrw(); }
+
+  usdInput.addEventListener('input', renderUsd);
+  krwInput.addEventListener('input', renderKrw);
+  rateInput.addEventListener('input', renderAll);
+
+  document.querySelectorAll('.rate button').forEach(b =>
+    b.addEventListener('click', () => { rateInput.value = b.dataset.rate; renderAll(); }));
+
+  document.getElementById('usdChips').addEventListener('click', e => {
+    if (e.target.tagName === 'BUTTON'){ usdInput.value = e.target.textContent; renderUsd(); }
+  });
+  document.getElementById('krwChips').addEventListener('click', e => {
+    if (e.target.tagName === 'BUTTON'){ krwInput.value = e.target.textContent; renderKrw(); }
+  });
+
+  // opening state: the user's own example
+  usdInput.value = '$1M';
+  krwInput.value = '1억';
+  renderAll();
+
+  // offline support: cache the app with a service worker (requires HTTPS, e.g. github.io)
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {/* offline mode unavailable */});
+    });
+  }
+})();
+</script>
+</body>
+</html>
